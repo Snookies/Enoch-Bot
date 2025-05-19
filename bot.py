@@ -41,7 +41,7 @@ async def ping(ctx):
 async def custom_help(ctx):
     help_message = (
         "**Available Commands:** \n"
-        "`!commands` - Show this help message\n"
+        "`!commands` - Show list of commands\n"
         "`/ping` - Test bot responsiveness\n"
         "`!enoch <chapter:verse>` or `<chapter:verse-verse>` - Get passage from 1 Enoch\n"
     )
@@ -90,7 +90,7 @@ async def slash_ping(interaction: discord.Interaction):
 async def slash_help(interaction: discord.Interaction):
     help_message = (
         "**Available Slash Commands:**\n"
-        "`/commands` - Show this help message\n"
+        "`/commands` - Show list of commands\n"
         "`/ping` - Test bot responsiveness\n"
         "`/enoch <reference>` - Get passage from 1 Enoch\n"
     )
