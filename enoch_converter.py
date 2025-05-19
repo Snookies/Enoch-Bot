@@ -1,0 +1,73 @@
+import re
+import json
+
+# === Input sample: paste or load your text ===
+raw_text = """
+1 1* The blessing of Enoch: with which he blessed the elect and the righteous who would be present on the day of tribulation at (the time of) the removal of all the ungodly ones. 
+1 2* And Enoch, the blessed and righteous man of the Lord, took up (his parable)e while his eyes were open and he saw, and said, “(This is) a holy vision from the heavens which the angels showed me: and I heard from them everything and I understood. I look not for this generation but for the distant one that is coming. I speak about the elect ones and concerning them.”
+1 3* And I took up with a parable (saying), “The God of the universe, the Holy Great One, will come forth from his dwelling. 
+1 4* And from there he will march upon Mount Sinai and appear in his camp emerging from heaven with a mighty power.
+1 5* And everyone shall be afraid, and Watchers shall quiver. And great fear and trembling shall seize them unto the ends of the earth. 
+1 6 Mountains and high places will fall down and be frightened. And high hills shall be made low; and they shall melt like a honeycomb before the flame.
+1 7 And earth shall be rent asunder; and all that is upon the earth shall perish. And there shall be a judgment upon all, (including) the righteous.
+1 8* And to all the righteous he will grant peace. He will preserve the elect, and kindness shall be upon them. They shall all belong to God and they shall prosper and be blessed; and the light of God shall shine unto them.
+1 9* Behold, he will arrive with ten million of the holy ones in order to execute judgment upon all. He will destroy the wicked ones and censure all flesh on account of everything that they have done, that which the sinners and the wicked ones committed against him.”
+
+2 1 Examine all the activit(ies which take place) in the sky and how they do not alter their ways, (and examine) the luminaries of heaven, how each one of them rises and sets; each one is systematic according to its respective season; and they do not divert from their appointed order.
+2 2 And look at the earth and turn in your mind concerning the action which is taking place in her from the beginning to the end: how all the work of God as being manifested does not change.
+2 3 And behold the summer and the winter, how the whole earth is filled with water and clouds and dew; and he causes rain to rest upon her.
+
+3 1 Examine and observe everything—and the trees, how all their leaves appear as if they wither and had fallen, except fourteen trees whose (leaves) do not fall but the old (foliage) remains for about two to three years until the new (leaves) come.
+
+4 1 And again, examine the days of the summer, how (the heat of) the sun is upon (the earth)c and dominates her. And as for you, you will crave shade and shelter on account of the heat of the sun; and the earth shall burn with scorching heat, and you are not able to walk on the earth or on the rock on account of the heat.
+
+5 1 Observe how the verdant trees are covered with leaves and they bear fruit. Pay attention concerning all things and know in what manner he fashioned them. All of them belong to him who lives forever. 
+5 2 His work proceeds and progresses from year to year. And all his work prospers and obeys him, and it does not change; but everything functions in the way in which God has ordered it. 
+5 3 And look at the seas: They do not part; they fulfill all their duties. 
+5 4 But as for you, you have not been long-suffering and you have not done the commandments of the Lord, but you have transgressed and spoken slanderously grave and harsh words with your impure mouths against his greatness. Oh, you hard-hearted, may you not find peace! 
+5 5 Therefore, you shall curse your days, and the years of your life shall perish and multiply in eternal execration; and there will not be any mercy unto you. 
+5 6 In those days, you shall make your names an eternal execration unto all the righteous; and the sinners shall curse you continually—you together with the sinners. 
+5 7 But to the elect there shall be light, joy, and peace, and they shall inherit the earth. To you, wicked ones, on the contrary, there will be a curse. 
+5 8 And then wisdom shall be given to the elect. And they shall all live and not return again to sin, either by being wicked or through pride; but those who have wisdom shall be humble and not return again to sin. 
+5 9 And they shall not be judged all the days of their lives; nor die through plague or wrath, but they shall complete the (designated) number of the days of their life. 
+5 10 And peace shall increase their lives and the years of their happiness shall be multiplied forever in gladness and peace all the days of their life.
+
+
+"""  # (Truncated example – replace this with your full raw text)
+
+book_name = "enoch"
+
+# === Processing ===
+data = {}
+current_chapter = ""
+lines = raw_text.splitlines()
+
+verse_pattern = re.compile(r"^(\d+)\s+(\d+)\*?\s+(.*)")
+
+for line in lines:
+    line = line.strip()
+    if not line:
+        continue
+
+    match = verse_pattern.match(line)
+    if match:
+        chapter, verse, content = match.groups()
+        key = f"{chapter}:{verse}"
+        data[key] = content.strip()
+    else:
+        # If continuation of previous verse
+        if current_chapter:
+            data[current_chapter] += " " + line.strip()
+        else:
+            print(f"Unmatched line: {line}")
+
+# === Output ===
+otp_json = {
+    book_name.lower(): data
+}
+
+# Save to JSON file
+with open("enoch_texts.json", "w", encoding="utf-8") as f:
+    json.dump(otp_json, f, indent=2, ensure_ascii=False)
+
+print("✅ Conversion complete. Saved as enoch_texts.json")
