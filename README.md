@@ -2,7 +2,7 @@
 
 A 1 Enoch bot for Discord
 
-[Invite me to your server]()
+[Invite me to your server](https://discord.com/oauth2/authorize?client_id=1373346108637708549&permissions=0&integration_type=0&scope=bot+applications.commands)
 
 ## Commands
 
