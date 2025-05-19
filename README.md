@@ -1,7 +1,7 @@
 A 1 Enoch bot for Discord
 
-/commands 
+>/commands 
 
-/enoch
+>/enoch
 
-/ping
+>/ping
