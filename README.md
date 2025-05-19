@@ -1,4 +1,6 @@
-## A 1 Enoch bot for Discord
+# Enoch-Bot
+
+A 1 Enoch bot for Discord
 
 [Invite me to your server]()
 
