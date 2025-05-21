@@ -178,7 +178,7 @@ async def slash_enoch(interaction: discord.Interaction, reference: str):
     except Exception as e:
         await interaction.response.send_message(f"⚠️ Error: {e}", ephemeral=True)
 
-# Run bot
+# ----- Run the Bot -----
 
-if __name__ == "__main__":
-    bot.run(TOKEN)
+print("Starting bot...")
+bot.run(TOKEN)
