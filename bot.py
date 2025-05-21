@@ -141,3 +141,5 @@ async def slash_enoch(interaction: discord.Interaction, reference: str):
     except Exception as e:
         await interaction.response.send_message(f"⚠️ Error while processing reference: {e}", ephemeral=True)
 
+if __name__ == "__main__":
+    bot.run(TOKEN)
