@@ -4,38 +4,7 @@ from dotenv import load_dotenv
 import discord
 from discord.ext import commands
 from discord import app_commands
-from discord.ui import View, Button
 
-# Pagination 
-
-class PaginationView(View):
-    def __init__(self, pages: list[str], user_id: int):
-        super().__init__(timeout=120)
-        self.pages = pages
-        self.current = 0
-        self.user_id = user_id
-
-    async def update_message(self, interaction: discord.Interaction):
-        content = self.pages[self.current]
-        await interaction.response.edit_message(content=content, view=self)
-
-    @discord.ui.button(label="⬅️ Prev", style=discord.ButtonStyle.secondary)
-    async def prev_page(self, interaction: discord.Interaction, button: Button):
-        if interaction.user.id != self.user_id:
-            await interaction.response.send_message("Not your session.", ephemeral=True)
-            return
-        if self.current > 0:
-            self.current -= 1
-            await self.update_message(interaction)
-
-    @discord.ui.button(label="➡️ Next", style=discord.ButtonStyle.secondary)
-    async def next_page(self, interaction: discord.Interaction, button: Button):
-        if interaction.user.id != self.user_id:
-            await interaction.response.send_message("Not your session.", ephemeral=True)
-            return
-        if self.current < len(self.pages) - 1:
-            self.current += 1
-            await self.update_message(interaction)
 
 
 # Load the .env file
@@ -135,7 +104,7 @@ async def slash_help(interaction: discord.Interaction):
 @app_commands.describe(reference="Format: 1:9 or 1:9-11")
 async def slash_enoch(interaction: discord.Interaction, reference: str):
     try:
-        reference = reference.replace(" ", "")  # Clean input
+        reference = reference.replace(" ", "")  # Remove whitespace
         output = ""
 
         if '-' in reference:
@@ -153,7 +122,7 @@ async def slash_enoch(interaction: discord.Interaction, reference: str):
                 else:
                     verses.append(f"**{v}.** [Not found]")
 
-            output = f"**1 Enoch {chapter}:{start}-{end}**\n" + "\n".join(verses)
+            output = f"**1 Enoch {chapter}:{start}-{end}**\n>>> " + " ".join(verses)
 
         else:
             chapter, verse = reference.split(':')
@@ -165,18 +134,18 @@ async def slash_enoch(interaction: discord.Interaction, reference: str):
                 await interaction.response.send_message("❌ Verse not found.", ephemeral=True)
                 return
 
-        # Split into pages of ~1800 characters
-        page_len = 1800
-        pages = [output[i:i+page_len] for i in range(0, len(output), page_len)]
-
-        # Send paginated response
-        await interaction.response.send_message(
-            content=pages[0],
-            view=PaginationView(pages, interaction.user.id)
-        )
+        # Split into messages if too long
+        if len(output) <= 2000:
+            await interaction.response.send_message(output)
+        else:
+            chunks = [output[i:i+1900] for i in range(0, len(output), 1900)]
+            await interaction.response.send_message(chunks[0])  # first message
+            for chunk in chunks[1:]:
+                await interaction.channel.send(chunk)
 
     except Exception as e:
         await interaction.response.send_message(f"⚠️ Error: {e}", ephemeral=True)
+
 
 # ----- Run the Bot -----
 
