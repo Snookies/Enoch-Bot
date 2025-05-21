@@ -93,9 +93,13 @@ async def enoch(ctx, reference: str):
 
 # ----- Global Slash Commands -----
 
+# ----- /ping -----
+
 @tree.command(name="ping", description="Test if the bot is responsive.")
 async def slash_ping(interaction: discord.Interaction):
     await interaction.response.send_message("Pong!")
+
+# ----- /commands -----
 
 @tree.command(name="commands", description="Show available commands.")
 async def slash_help(interaction: discord.Interaction):
@@ -106,6 +110,8 @@ async def slash_help(interaction: discord.Interaction):
         "`/enoch <reference>` - Get passage from 1 Enoch\n"
     )
     await interaction.response.send_message(help_message)
+
+# ----- /enoch  ----- 
 
 @tree.command(name="enoch", description="Get a passage from 1 Enoch.")
 @app_commands.describe(reference="Format: 48:1 or 48:1-10")
@@ -127,11 +133,11 @@ async def slash_enoch(interaction: discord.Interaction, reference: str):
             for v in range(start, end + 1):
                 key = f"{chapter}:{v}"
                 verse_text = enoch_data["enoch"].get(key, "[Not found]")
-                embed.add_field(name=f"Verse {v}", value=verse_text, inline=False)
+                # Verse number bolded in the field name
+                embed.add_field(name=f"**{v}.**", value=verse_text, inline=False)
 
             embed.set_footer(text="From 1 Enoch")
 
-            # Correct length check:
             fields_text = "".join(f"{field.name}{field.value}" for field in embed.fields)
             description = embed.to_dict().get("description", "")
             if len(description + fields_text) > 5900:
@@ -159,6 +165,7 @@ async def slash_enoch(interaction: discord.Interaction, reference: str):
 
     except Exception as e:
         await interaction.response.send_message(f"⚠️ Error: {e}", ephemeral=True)
+
 
 
 
