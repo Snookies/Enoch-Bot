@@ -125,22 +125,22 @@ async def slash_enoch(interaction: discord.Interaction, reference: str):
             start = int(start_verse)
             end = int(end_verse)
 
-            embed = discord.Embed(
-                title=f"1 Enoch {chapter}:{start}-{end}",
-                color=discord.Color.gold()
-            )
-
+            # Build one big string for description with all verses concatenated
+            verses_text = ""
             for v in range(start, end + 1):
                 key = f"{chapter}:{v}"
                 verse_text = enoch_data["enoch"].get(key, "[Not found]")
-                # Verse number bolded in the field name
-                embed.add_field(name=f"**{v}.**", value=verse_text, inline=False)
+                verses_text += f"**{v}.** {verse_text} "
+
+            embed = discord.Embed(
+                title=f"1 Enoch {chapter}:{start}-{end}",
+                description=verses_text.strip(),
+                color=discord.Color.gold()
+            )
 
             embed.set_footer(text="From 1 Enoch")
 
-            fields_text = "".join(f"{field.name}{field.value}" for field in embed.fields)
-            description = embed.to_dict().get("description", "")
-            if len(description + fields_text) > 5900:
+            if len(embed.description) > 4096:
                 await interaction.response.send_message(
                     "⚠️ Passage too long to display in a single embed.", ephemeral=True
                 )
@@ -165,6 +165,7 @@ async def slash_enoch(interaction: discord.Interaction, reference: str):
 
     except Exception as e:
         await interaction.response.send_message(f"⚠️ Error: {e}", ephemeral=True)
+
 
 
 
