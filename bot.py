@@ -99,12 +99,11 @@ async def slash_help(interaction: discord.Interaction):
     await interaction.response.send_message(help_message)
 
 @tree.command(name="enoch", description="Get a passage from 1 Enoch.")
-@app_commands.describe(reference="Format: 1:9 or 1:9-11")
+@app_commands.describe(reference="Format: 10:3 or 10:3-9")
 async def slash_enoch(interaction: discord.Interaction, reference: str):
     try:
         output = ""
-
-        reference = reference.replace(" ", "")  # Strip all spaces for safety
+        reference = reference.replace(" ", "")  # Remove spaces to avoid format errors
 
         if '-' in reference:
             chapter_verse, end_verse = reference.split('-')
@@ -119,25 +118,42 @@ async def slash_enoch(interaction: discord.Interaction, reference: str):
                 if verse_text:
                     verses.append(f"**{v}.** {verse_text}")
 
-            if verses:
-                output = f"**1 Enoch {chapter}:{start}-{end}**\n>>> " + " ".join(verses)
+            if not verses:
+                await interaction.response.send_message("No verses found for that range.", ephemeral=True)
+                return
+
+            # Chunk response into blocks under 2000 characters
+            MAX_LENGTH = 1800
+            chunks = []
+            current = ""
+
+            for verse in verses:
+                if len(current) + len(verse) + 1 > MAX_LENGTH:
+                    chunks.append(current)
+                    current = ""
+                current += verse + " "
+
+            if current:
+                chunks.append(current)
+
+            # Send first chunk as initial response, the rest as follow-ups
+            await interaction.response.send_message(
+                f"**1 Enoch {chapter}:{start}-{end}**\n>>> {chunks[0]}"
+            )
+            for chunk in chunks[1:]:
+                await interaction.followup.send(f">>> {chunk}")
 
         else:
+            # Single verse
             chapter, verse = reference.split(':')
             key = f"{chapter}:{verse}"
             verse_text = enoch_data["enoch"].get(key)
             if verse_text:
                 output = f"**1 Enoch {key}**\n>>> **{verse}.** {verse_text}"
-
-        if output:
-            await interaction.response.send_message(output)
-        else:
-            await interaction.response.send_message("❌ Verse(s) not found.", ephemeral=True)
+                await interaction.response.send_message(output)
+            else:
+                await interaction.response.send_message("❌ Verse not found.", ephemeral=True)
 
     except Exception as e:
-        await interaction.response.send_message(f"⚠️ Error: {e}", ephemeral=True)
+        await interaction.response.send_message(f"⚠️ Error while processing reference: {e}", ephemeral=True)
 
-
-# ----- Run the Bot -----
-print("Starting bot...")
-bot.run(TOKEN)
