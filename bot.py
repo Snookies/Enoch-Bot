@@ -101,11 +101,11 @@ async def slash_help(interaction: discord.Interaction):
     await interaction.response.send_message(help_message)
 
 @tree.command(name="enoch", description="Get a passage from 1 Enoch.")
-@app_commands.describe(reference="Format: 1:9 or 1:9-11")
+@app_commands.describe(reference="Format: 48:1-10")
 async def slash_enoch(interaction: discord.Interaction, reference: str):
     try:
-        reference = reference.replace(" ", "")  # Remove whitespace
-        output = ""
+        reference = reference.replace(" ", "")
+        messages = []
 
         if '-' in reference:
             chapter_verse, end_verse = reference.split('-')
@@ -113,35 +113,38 @@ async def slash_enoch(interaction: discord.Interaction, reference: str):
             start = int(start_verse)
             end = int(end_verse)
 
-            verses = []
+            current_block = f"**1 Enoch {chapter}:{start}-{end}**\n>>> "
             for v in range(start, end + 1):
                 key = f"{chapter}:{v}"
                 verse_text = enoch_data["enoch"].get(key)
                 if verse_text:
-                    verses.append(f"**{v}.** {verse_text}")
+                    verse_line = f"{v}. {verse_text} "
                 else:
-                    verses.append(f"**{v}.** [Not found]")
+                    verse_line = f"{v}. [Not found] "
 
-            output = f"**1 Enoch {chapter}:{start}-{end}**\n>>> " + " ".join(verses)
+                # If adding this verse would exceed the limit, start a new message
+                if len(current_block) + len(verse_line) > 2000:
+                    messages.append(current_block.strip())
+                    current_block = f">>> {verse_line}"  # start next block with new verse
+                else:
+                    current_block += verse_line
+
+            messages.append(current_block.strip())  # append last block
 
         else:
             chapter, verse = reference.split(':')
             key = f"{chapter}:{verse}"
             verse_text = enoch_data["enoch"].get(key)
             if verse_text:
-                output = f"**1 Enoch {key}**\n>>> **{verse}.** {verse_text}"
+                messages = [f"**1 Enoch {key}**\n>>> {verse}. {verse_text}"]
             else:
                 await interaction.response.send_message("❌ Verse not found.", ephemeral=True)
                 return
 
-        # Split into messages if too long
-        if len(output) <= 2000:
-            await interaction.response.send_message(output)
-        else:
-            chunks = [output[i:i+1900] for i in range(0, len(output), 1900)]
-            await interaction.response.send_message(chunks[0])  # first message
-            for chunk in chunks[1:]:
-                await interaction.channel.send(chunk)
+        # Send the messages
+        await interaction.response.send_message(messages[0])
+        for msg in messages[1:]:
+            await interaction.channel.send(msg)
 
     except Exception as e:
         await interaction.response.send_message(f"⚠️ Error: {e}", ephemeral=True)
