@@ -76,6 +76,8 @@ async def enoch(ctx, reference: str):
 
         if output:
             await ctx.send(output)
+        else:
+            await ctx.send("Verse not found.")
 
     except Exception as e:
         await ctx.send("An error occurred.")
