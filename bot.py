@@ -69,7 +69,7 @@ async def enoch(ctx, reference: str):
                 # Add each verse as a field
                 embed.add_field(name=f"Verse {v}", value=verse_text, inline=False)
 
-            embed.set_footer(text="From 1 Enoch")
+            # embed.set_footer(text="From 1 Enoch")
             await ctx.send(embed=embed)
 
         else:
@@ -106,13 +106,11 @@ async def slash_help(interaction: discord.Interaction):
         "`/enoch <reference>` - Get passage from 1 Enoch\n"
     )
     await interaction.response.send_message(help_message)
-
 @tree.command(name="enoch", description="Get a passage from 1 Enoch.")
 @app_commands.describe(reference="Format: 48:1 or 48:1-10")
 async def slash_enoch(interaction: discord.Interaction, reference: str):
     try:
         reference = reference.replace(" ", "")
-        messages = []
 
         if '-' in reference:
             chapter_verse, end_verse = reference.split('-')
@@ -120,42 +118,43 @@ async def slash_enoch(interaction: discord.Interaction, reference: str):
             start = int(start_verse)
             end = int(end_verse)
 
-            header = f"**1 Enoch {chapter}:{start}-{end}**\n>>> "
-            current_block = header
+            embed = discord.Embed(
+                title=f"1 Enoch {chapter}:{start}-{end}",
+                color=discord.Color.gold()
+            )
 
             for v in range(start, end + 1):
                 key = f"{chapter}:{v}"
-                verse_text = enoch_data["enoch"].get(key)
-                if verse_text:
-                    verse_line = f"**{v}.** {verse_text} "
-                else:
-                    verse_line = f"**{v}.** [Not found] "
+                verse_text = enoch_data["enoch"].get(key, "[Not found]")
+                embed.add_field(name=f"Verse {v}", value=verse_text, inline=False)
 
-                if len(current_block) + len(verse_line) > 2000:
-                    messages.append(current_block.strip())
-                    current_block = f">>> {verse_line}"
-                else:
-                    current_block += verse_line
+            embed.set_footer(text="From 1 Enoch")
 
-            messages.append(current_block.strip())  # Append the last chunk
+            # Check embed length limit (~6000 chars total)
+            if len(embed.to_dict().get("description", "") + "".join(f"{f['name']}{f['value']}" for f in embed.fields)) > 5900:
+                await interaction.response.send_message("⚠️ Passage too long to display in a single embed.", ephemeral=True)
+                return
+
+            await interaction.response.send_message(embed=embed)
 
         else:
             chapter, verse = reference.split(':')
             key = f"{chapter}:{verse}"
             verse_text = enoch_data["enoch"].get(key)
             if verse_text:
-                messages = [f"**1 Enoch {key}**\n>>> **{verse}.** {verse_text}"]
+                embed = discord.Embed(
+                    title=f"1 Enoch {key}",
+                    description=f"**{verse}.** {verse_text}",
+                    color=discord.Color.gold()
+                )
+                embed.set_footer(text="From 1 Enoch")
+                await interaction.response.send_message(embed=embed)
             else:
                 await interaction.response.send_message("❌ Verse not found.", ephemeral=True)
-                return
-
-        # Send messages
-        await interaction.response.send_message(messages[0])
-        for msg in messages[1:]:
-            await interaction.channel.send(msg)
 
     except Exception as e:
         await interaction.response.send_message(f"⚠️ Error: {e}", ephemeral=True)
+
 
 
 
