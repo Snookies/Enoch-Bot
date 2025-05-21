@@ -106,6 +106,7 @@ async def slash_help(interaction: discord.Interaction):
         "`/enoch <reference>` - Get passage from 1 Enoch\n"
     )
     await interaction.response.send_message(help_message)
+
 @tree.command(name="enoch", description="Get a passage from 1 Enoch.")
 @app_commands.describe(reference="Format: 48:1 or 48:1-10")
 async def slash_enoch(interaction: discord.Interaction, reference: str):
@@ -130,9 +131,13 @@ async def slash_enoch(interaction: discord.Interaction, reference: str):
 
             embed.set_footer(text="From 1 Enoch")
 
-            # Check embed length limit (~6000 chars total)
-            if len(embed.to_dict().get("description", "") + "".join(f"{f['name']}{f['value']}" for f in embed.fields)) > 5900:
-                await interaction.response.send_message("⚠️ Passage too long to display in a single embed.", ephemeral=True)
+            # Correct length check:
+            fields_text = "".join(f"{field.name}{field.value}" for field in embed.fields)
+            description = embed.to_dict().get("description", "")
+            if len(description + fields_text) > 5900:
+                await interaction.response.send_message(
+                    "⚠️ Passage too long to display in a single embed.", ephemeral=True
+                )
                 return
 
             await interaction.response.send_message(embed=embed)
