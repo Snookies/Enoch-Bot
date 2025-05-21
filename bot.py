@@ -52,37 +52,44 @@ async def custom_help(ctx):
 @bot.command()
 async def enoch(ctx, reference: str):
     try:
-        output = ""
-
         if '-' in reference:
             chapter_verse, end_verse = reference.split('-')
             chapter, start_verse = chapter_verse.split(':')
             start = int(start_verse)
             end = int(end_verse)
 
-            verses = []
+            embed = discord.Embed(
+                title=f"1 Enoch {chapter}:{start}-{end}",
+                color=discord.Color.gold()
+            )
+
             for v in range(start, end + 1):
                 key = f"{chapter}:{v}"
-                verse_text = enoch_data["enoch"].get(key)
-                if verse_text:
-                    verses.append(f"**{v}.** {verse_text}")
+                verse_text = enoch_data["enoch"].get(key, "[Not found]")
+                # Add each verse as a field
+                embed.add_field(name=f"Verse {v}", value=verse_text, inline=False)
 
-            if verses:
-                joined_verses = " ".join(verses)
-                output = f"**1 Enoch {chapter}:{start}-{end}**\n>>> {joined_verses}"
+            embed.set_footer(text="From 1 Enoch")
+            await ctx.send(embed=embed)
+
         else:
-            verse_text = enoch_data["enoch"].get(reference)
+            chapter, verse = reference.split(':')
+            key = f"{chapter}:{verse}"
+            verse_text = enoch_data["enoch"].get(key)
             if verse_text:
-                chapter, verse = reference.split(':')
-                output = f"**1 Enoch {reference}**\n>>> **{verse}.** {verse_text}"
-
-        if output:
-            await ctx.send(output)
-        else:
-            await ctx.send("Verse not found.")
+                embed = discord.Embed(
+                    title=f"1 Enoch {key}",
+                    description=f"**{verse}.** {verse_text}",
+                    color=discord.Color.gold()
+                )
+                embed.set_footer(text="From 1 Enoch")
+                await ctx.send(embed=embed)
+            else:
+                await ctx.send("Verse not found.")
 
     except Exception as e:
         await ctx.send("An error occurred.")
+
 
 # ----- Global Slash Commands -----
 
