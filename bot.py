@@ -104,6 +104,8 @@ async def slash_enoch(interaction: discord.Interaction, reference: str):
     try:
         output = ""
 
+        reference = reference.replace(" ", "")  # Strip all spaces for safety
+
         if '-' in reference:
             chapter_verse, end_verse = reference.split('-')
             chapter, start_verse = chapter_verse.split(':')
@@ -118,20 +120,23 @@ async def slash_enoch(interaction: discord.Interaction, reference: str):
                     verses.append(f"**{v}.** {verse_text}")
 
             if verses:
-                joined_verses = " ".join(verses)
-                output = f"**1 Enoch {chapter}:{start}-{end}**\n>>> {joined_verses}"
+                output = f"**1 Enoch {chapter}:{start}-{end}**\n>>> " + " ".join(verses)
+
         else:
-            verse_text = enoch_data["enoch"].get(reference)
+            chapter, verse = reference.split(':')
+            key = f"{chapter}:{verse}"
+            verse_text = enoch_data["enoch"].get(key)
             if verse_text:
-                chapter, verse = reference.split(':')
-                output = f"**1 Enoch {reference}**\n>>> **{verse}.** {verse_text}"
+                output = f"**1 Enoch {key}**\n>>> **{verse}.** {verse_text}"
 
         if output:
             await interaction.response.send_message(output)
         else:
-            await interaction.response.send_message("Verse not found.")
+            await interaction.response.send_message("❌ Verse(s) not found.", ephemeral=True)
+
     except Exception as e:
-        await interaction.response.send_message("An error occurred while processing the reference.")
+        await interaction.response.send_message(f"⚠️ Error: {e}", ephemeral=True)
+
 
 # ----- Run the Bot -----
 print("Starting bot...")
