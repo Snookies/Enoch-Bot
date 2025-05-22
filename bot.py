@@ -19,7 +19,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 
 # Create the bot
-bot = commands.Bot(command_prefix='!', intents=intents)
+bot = commands.Bot(command_prefix='!', intents=intents, case_insensitive=True)
 tree = bot.tree  # For slash commands
 
 # Event: bot is ready
@@ -58,6 +58,12 @@ async def enoch(ctx, reference: str):
         if '-' in reference:
             chapter_verse, end_verse = reference.split('-')
             chapter, start_verse = chapter_verse.split(':')
+
+            if not chapter.isdigit() or not start_verse.isdigit() or not end_verse.isdigit():
+                await ctx.send("❌ Invalid format. Use chapter:verse or chapter:verse-verse.")
+                return
+
+
             start = int(start_verse)
             end = int(end_verse)
 
@@ -80,6 +86,11 @@ async def enoch(ctx, reference: str):
 
         else:
             chapter, verse = reference.split(':')
+
+            if not chapter.isdigit() or not verse.isdigit():
+                await ctx.send("❌ Invalid format. Use chapter:verse.")
+                return
+
             key = f"{chapter}:{verse}"
             verse_text = enoch_data["enoch"].get(key)
 
@@ -134,6 +145,11 @@ async def slash_enoch(interaction: discord.Interaction, reference: str):
         if '-' in reference:
             chapter_verse, end_verse = reference.split('-')
             chapter, start_verse = chapter_verse.split(':')
+
+            if not chapter.isdigit() or not start_verse.isdigit() or not end_verse.isdigit():
+                await interaction.response.send_message("❌ Invalid format. Use chapter:verse or chapter:verse-verse.", ephemeral=True)
+                return
+
             start = int(start_verse)
             end = int(end_verse)
 
@@ -164,6 +180,11 @@ async def slash_enoch(interaction: discord.Interaction, reference: str):
 
         else:
             chapter, verse = reference.split(':')
+
+            if not chapter.isdigit() or not verse.isdigit():
+                await interaction.response.send_message("❌ Invalid format. Use chapter:verse.", ephemeral=True)
+                return
+
             key = f"{chapter}:{verse}"
             verse_text = enoch_data["enoch"].get(key)
 
