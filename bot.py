@@ -26,6 +26,13 @@ GAMEMODE_MAPS = {
     "Flashpoint": ["New Junk City", "Suravasa"]
 }
 
+RANKS = [
+    "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master",
+    "Grandmaster", "Top 500", "GM 1", "GM 2", "GM 3"
+]
+
+ALL_HEROES = [hero for heroes in ROLE_HEROES.values() for hero in heroes]
+ALL_MAPS = [m for maps in GAMEMODE_MAPS.values() for m in maps]
 
 
 # Load the .env file
@@ -203,24 +210,17 @@ async def slash_enoch(interaction: discord.Interaction, reference: str):
 
 # -------- OVERWATCH -----------
 
-@tree.command(name="matchinfo", description="Record a match result with role, heroes, map, rank and result")
+@bot.tree.command(name="matchinfo", description="Log an Overwatch match")
 @app_commands.describe(
-    role="Choose the role played",
-    heroes="Comma separated heroes (must belong to chosen role)",
-    gamemode="Choose the game mode",
-    map_name="Choose the map played",
-    rank="Your rank (free text)",
+    hero="Hero you played",
+    map_name="Map you played on",
+    rank="Your current rank",
     result="Match result"
 )
 @app_commands.choices(
-    role=[
-        app_commands.Choice(name="Tank", value="Tank"),
-        app_commands.Choice(name="DPS", value="DPS"),
-        app_commands.Choice(name="Support", value="Support"),
-    ],
-    gamemode=[
-        app_commands.Choice(name=k, value=k) for k in GAMEMODE_MAPS.keys()
-    ],
+    hero=[app_commands.Choice(name=h, value=h) for h in sorted(ALL_HEROES)],
+    map_name=[app_commands.Choice(name=m, value=m) for m in sorted(ALL_MAPS)],
+    rank=[app_commands.Choice(name=r, value=r) for r in RANKS],
     result=[
         app_commands.Choice(name="Win", value="Win"),
         app_commands.Choice(name="Loss", value="Loss")
@@ -228,52 +228,27 @@ async def slash_enoch(interaction: discord.Interaction, reference: str):
 )
 async def matchinfo(
     interaction: discord.Interaction,
-    role: app_commands.Choice[str],
-    heroes: str,
-    gamemode: app_commands.Choice[str],
-    map_name: str,
-    rank: str,
+    hero: app_commands.Choice[str],
+    map_name: app_commands.Choice[str],
+    rank: app_commands.Choice[str],
     result: app_commands.Choice[str]
 ):
-    # Normalize inputs
-    hero_list = [h.strip() for h in heroes.split(",")]
+    # Find role from hero
+    role = next((r for r, heroes in ROLE_HEROES.items() if hero.value in heroes), "Unknown")
 
-    # Validate heroes vs role
-    valid_heroes = ROLE_HEROES.get(role.value, [])
-    invalid_heroes = [h for h in hero_list if h not in valid_heroes]
-
-    if invalid_heroes:
-        await interaction.response.send_message(
-            f"❌ The following hero(es) are invalid for role {role.value}: {', '.join(invalid_heroes)}",
-            ephemeral=True
-        )
-        return
-
-    # Validate map vs gamemode
-    valid_maps = GAMEMODE_MAPS.get(gamemode.value, [])
-    if map_name not in valid_maps:
-        await interaction.response.send_message(
-            f"❌ Invalid map for game mode {gamemode.value}. Valid maps are: {', '.join(valid_maps)}",
-            ephemeral=True
-        )
-        return
-
-    # Format table string
-    # Ensure column widths roughly consistent, truncate if needed
-    heroes_str = ", ".join(hero_list)
     table = (
-        "Hero(s)       | Role    | Map                  | Rank     | Result\n"
-        "------------- | ------- | -------------------- | -------- | ------\n"
-        f"{heroes_str:<13} | {role.value:<7} | {map_name:<20} | {rank:<8} | {result.value}"
+        f"{'Hero(s)':<20}{'Role':<10}{'Map':<22}{'Rank':<10}{'Result':<10}\n"
+        f"{'-'*20}{'-'*10}{'-'*22}{'-'*10}{'-'*10}\n"
+        f"{hero.value:<20}{role:<10}{map_name.value:<22}{rank.value:<10}{result.value:<10}"
     )
 
     embed = discord.Embed(
         title="Match Information",
-        description=f"```ansi\n{table}```",
+        description=f"```{table}```",
         color=discord.Color.green() if result.value == "Win" else discord.Color.red()
     )
-
     await interaction.response.send_message(embed=embed)
+
 
 
 
