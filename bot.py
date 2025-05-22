@@ -64,8 +64,13 @@ async def enoch(ctx, reference: str):
             verses_text = ""
             for v in range(start, end + 1):
                 key = f"{chapter}:{v}"
-                verse_text = enoch_data["enoch"].get(key, "[Not found]")
-                verses_text += f"**{v}.** {verse_text}\n"
+                verse_text = enoch_data["enoch"].get(key)
+                if verse_text:
+                    verses_text += f"**{v}.** {verse_text}\n"
+
+            if not verses_text:
+                await ctx.send("❌ No verses found for that range.")
+                return
 
             embed = discord.Embed(
                 title=f"1 Enoch {chapter}:{start}-{end}",
@@ -85,7 +90,6 @@ async def enoch(ctx, reference: str):
                     description=f"**{verse}.** {verse_text}",
                     color=discord.Color.gold()
                 )
-                embed.set_footer(text="From 1 Enoch")
             else:
                 await ctx.send("❌ Verse not found.")
                 return
@@ -137,8 +141,13 @@ async def slash_enoch(interaction: discord.Interaction, reference: str):
             verses_text = ""
             for v in range(start, end + 1):
                 key = f"{chapter}:{v}"
-                verse_text = enoch_data["enoch"].get(key, "[Not found]")
-                verses_text += f"**{v}.** {verse_text}\n"
+                verse_text = enoch_data["enoch"].get(key)
+                if verse_text:
+                    verses_text += f"**{v}.** {verse_text}\n"
+
+            if not verses_text:
+                await interaction.response.send_message("❌ No verses found for that range.", ephemeral=True)
+                return
 
             embed = discord.Embed(
                 title=f"1 Enoch {chapter}:{start}-{end}",
@@ -159,13 +168,13 @@ async def slash_enoch(interaction: discord.Interaction, reference: str):
             chapter, verse = reference.split(':')
             key = f"{chapter}:{verse}"
             verse_text = enoch_data["enoch"].get(key)
+
             if verse_text:
                 embed = discord.Embed(
                     title=f"1 Enoch {key}",
                     description=f"**{verse}.** {verse_text}",
                     color=discord.Color.gold()
                 )
-                embed.set_footer(text="From 1 Enoch")
                 await interaction.response.send_message(embed=embed)
             else:
                 await interaction.response.send_message("❌ Verse not found.", ephemeral=True)
