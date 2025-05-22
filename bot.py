@@ -52,30 +52,33 @@ async def custom_help(ctx):
 @bot.command()
 async def enoch(ctx, reference: str):
     try:
+        reference = reference.replace(" ", "")
+        embed = None
+
         if '-' in reference:
             chapter_verse, end_verse = reference.split('-')
             chapter, start_verse = chapter_verse.split(':')
             start = int(start_verse)
             end = int(end_verse)
 
-            embed = discord.Embed(
-                title=f"1 Enoch {chapter}:{start}-{end}",
-                color=discord.Color.gold()
-            )
-
+            verses_text = ""
             for v in range(start, end + 1):
                 key = f"{chapter}:{v}"
                 verse_text = enoch_data["enoch"].get(key, "[Not found]")
-                # Add each verse as a field
-                embed.add_field(name=f"Verse {v}", value=verse_text, inline=False)
+                verses_text += f"**{v}.** {verse_text}\n"
 
-            # embed.set_footer(text="From 1 Enoch")
-            await ctx.send(embed=embed)
+            embed = discord.Embed(
+                title=f"1 Enoch {chapter}:{start}-{end}",
+                description=verses_text.strip(),
+                color=discord.Color.gold()
+            )
+            embed.set_footer(text="From 1 Enoch")
 
         else:
             chapter, verse = reference.split(':')
             key = f"{chapter}:{verse}"
             verse_text = enoch_data["enoch"].get(key)
+
             if verse_text:
                 embed = discord.Embed(
                     title=f"1 Enoch {key}",
@@ -83,12 +86,18 @@ async def enoch(ctx, reference: str):
                     color=discord.Color.gold()
                 )
                 embed.set_footer(text="From 1 Enoch")
-                await ctx.send(embed=embed)
             else:
-                await ctx.send("Verse not found.")
+                await ctx.send("❌ Verse not found.")
+                return
+
+        if embed and len(embed.description) <= 4096:
+            await ctx.send(embed=embed)
+        else:
+            await ctx.send("⚠️ Passage too long to display in a single embed.")
 
     except Exception as e:
-        await ctx.send("An error occurred.")
+        await ctx.send("⚠️ An error occurred.")
+
 
 
 # ----- Global Slash Commands -----
@@ -114,11 +123,8 @@ async def slash_help(interaction: discord.Interaction):
 # ----- /enoch  ----- 
 
 @tree.command(name="enoch", description="Get a passage from 1 Enoch.")
-@app_commands.describe(
-    reference="Format: 48:1 or 48:1-10",
-    spaced="Add space/new lines between verses?"
-)
-async def slash_enoch(interaction: discord.Interaction, reference: str, spaced: bool = False):
+@app_commands.describe(reference="Format: 48:1 or 48:1-10")
+async def slash_enoch(interaction: discord.Interaction, reference: str):
     try:
         reference = reference.replace(" ", "")
 
@@ -128,15 +134,11 @@ async def slash_enoch(interaction: discord.Interaction, reference: str, spaced: 
             start = int(start_verse)
             end = int(end_verse)
 
-            # Build description based on spacing choice
             verses_text = ""
             for v in range(start, end + 1):
                 key = f"{chapter}:{v}"
                 verse_text = enoch_data["enoch"].get(key, "[Not found]")
-                if spaced:
-                    verses_text += f"**{v}.** {verse_text}\n"
-                else:
-                    verses_text += f"**{v}.** {verse_text} "
+                verses_text += f"**{v}.** {verse_text}\n"
 
             embed = discord.Embed(
                 title=f"1 Enoch {chapter}:{start}-{end}",
