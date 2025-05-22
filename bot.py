@@ -14,6 +14,20 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 with open("enoch_texts.json", "r", encoding="utf-8") as f:
     enoch_data = json.load(f)
 
+# Build a lookup of available verses
+available_refs = enoch_data["enoch"].keys()
+
+# Build max chapter and verse per chapter
+chapter_verse_map = {}
+for ref in available_refs:
+    ch, vs = ref.split(":")
+    ch = int(ch)
+    vs = int(vs)
+
+    if ch not in chapter_verse_map:
+        chapter_verse_map[ch] = set()
+    chapter_verse_map[ch].add(vs)
+
 # Intents
 intents = discord.Intents.default()
 intents.message_content = True
@@ -63,9 +77,22 @@ async def enoch(ctx, reference: str):
                 await ctx.send("❌ Invalid format. Use chapter:verse or chapter:verse-verse.")
                 return
 
-
+            chapter_num = int(chapter)
             start = int(start_verse)
             end = int(end_verse)
+
+            if start > end:
+                await ctx.send("❌ Invalid range: start verse must be less than or equal to end.")
+                return
+
+            if chapter_num not in chapter_verse_map:
+                await ctx.send("❌ Chapter not found.")
+                return
+
+            missing = [v for v in range(start, end + 1) if v not in chapter_verse_map[chapter_num]]
+            if missing:
+                await ctx.send(f"❌ These verses don't exist in chapter {chapter}: {', '.join(map(str, missing))}")
+                return
 
             verses_text = ""
             for v in range(start, end + 1):
@@ -73,10 +100,6 @@ async def enoch(ctx, reference: str):
                 verse_text = enoch_data["enoch"].get(key)
                 if verse_text:
                     verses_text += f"**{v}.** {verse_text}\n"
-
-            if not verses_text:
-                await ctx.send("❌ No verses found for that range.")
-                return
 
             embed = discord.Embed(
                 title=f"1 Enoch {chapter}:{start}-{end}",
@@ -91,18 +114,21 @@ async def enoch(ctx, reference: str):
                 await ctx.send("❌ Invalid format. Use chapter:verse.")
                 return
 
+            chapter_num = int(chapter)
+            verse_num = int(verse)
+
+            if chapter_num not in chapter_verse_map or verse_num not in chapter_verse_map[chapter_num]:
+                await ctx.send("❌ That verse does not exist.")
+                return
+
             key = f"{chapter}:{verse}"
             verse_text = enoch_data["enoch"].get(key)
 
-            if verse_text:
-                embed = discord.Embed(
-                    title=f"1 Enoch {key}",
-                    description=f"**{verse}.** {verse_text}",
-                    color=discord.Color.gold()
-                )
-            else:
-                await ctx.send("❌ Verse not found.")
-                return
+            embed = discord.Embed(
+                title=f"1 Enoch {key}",
+                description=f"**{verse}.** {verse_text}",
+                color=discord.Color.gold()
+            )
 
         if embed and len(embed.description) <= 4096:
             await ctx.send(embed=embed)
@@ -111,6 +137,7 @@ async def enoch(ctx, reference: str):
 
     except Exception as e:
         await ctx.send("⚠️ An error occurred.")
+
 
 
 
@@ -150,8 +177,25 @@ async def slash_enoch(interaction: discord.Interaction, reference: str):
                 await interaction.response.send_message("❌ Invalid format. Use chapter:verse or chapter:verse-verse.", ephemeral=True)
                 return
 
+            chapter_num = int(chapter)
             start = int(start_verse)
             end = int(end_verse)
+
+            if start > end:
+                await interaction.response.send_message("❌ Invalid range: start must be <= end.", ephemeral=True)
+                return
+
+            if chapter_num not in chapter_verse_map:
+                await interaction.response.send_message("❌ Chapter not found.", ephemeral=True)
+                return
+
+            missing = [v for v in range(start, end + 1) if v not in chapter_verse_map[chapter_num]]
+            if missing:
+                await interaction.response.send_message(
+                    f"❌ These verses don't exist in chapter {chapter}: {', '.join(map(str, missing))}",
+                    ephemeral=True
+                )
+                return
 
             verses_text = ""
             for v in range(start, end + 1):
@@ -160,10 +204,6 @@ async def slash_enoch(interaction: discord.Interaction, reference: str):
                 if verse_text:
                     verses_text += f"**{v}.** {verse_text}\n"
 
-            if not verses_text:
-                await interaction.response.send_message("❌ No verses found for that range.", ephemeral=True)
-                return
-
             embed = discord.Embed(
                 title=f"1 Enoch {chapter}:{start}-{end}",
                 description=verses_text.strip(),
@@ -171,9 +211,7 @@ async def slash_enoch(interaction: discord.Interaction, reference: str):
             )
 
             if len(embed.description) > 4096:
-                await interaction.response.send_message(
-                    "⚠️ Passage too long to display in a single embed.", ephemeral=True
-                )
+                await interaction.response.send_message("⚠️ Passage too long to display in a single embed.", ephemeral=True)
                 return
 
             await interaction.response.send_message(embed=embed)
@@ -185,21 +223,26 @@ async def slash_enoch(interaction: discord.Interaction, reference: str):
                 await interaction.response.send_message("❌ Invalid format. Use chapter:verse.", ephemeral=True)
                 return
 
+            chapter_num = int(chapter)
+            verse_num = int(verse)
+
+            if chapter_num not in chapter_verse_map or verse_num not in chapter_verse_map[chapter_num]:
+                await interaction.response.send_message("❌ That verse does not exist.", ephemeral=True)
+                return
+
             key = f"{chapter}:{verse}"
             verse_text = enoch_data["enoch"].get(key)
 
-            if verse_text:
-                embed = discord.Embed(
-                    title=f"1 Enoch {key}",
-                    description=f"**{verse}.** {verse_text}",
-                    color=discord.Color.gold()
-                )
-                await interaction.response.send_message(embed=embed)
-            else:
-                await interaction.response.send_message("❌ Verse not found.", ephemeral=True)
+            embed = discord.Embed(
+                title=f"1 Enoch {key}",
+                description=f"**{verse}.** {verse_text}",
+                color=discord.Color.gold()
+            )
+            await interaction.response.send_message(embed=embed)
 
     except Exception as e:
         await interaction.response.send_message(f"⚠️ Error: {e}", ephemeral=True)
+
 
 
 
