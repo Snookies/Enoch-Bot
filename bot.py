@@ -77,7 +77,6 @@ async def enoch(ctx, reference: str):
                 description=verses_text.strip(),
                 color=discord.Color.gold()
             )
-            embed.set_footer(text="From 1 Enoch")
 
         else:
             chapter, verse = reference.split(':')
@@ -154,7 +153,6 @@ async def slash_enoch(interaction: discord.Interaction, reference: str):
                 description=verses_text.strip(),
                 color=discord.Color.gold()
             )
-            embed.set_footer(text="From 1 Enoch")
 
             if len(embed.description) > 4096:
                 await interaction.response.send_message(
