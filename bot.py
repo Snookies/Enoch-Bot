@@ -52,14 +52,27 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 tree = bot.tree  # For slash commands
 
 # Event: bot is ready
+# @bot.event
+# async def on_ready():
+#     # Optional: Clear and re-sync global slash commands
+#     try:
+#         await tree.sync()
+#         print(f"Logged in as {bot.user} and slash commands synced!")
+#     except Exception as e:
+#         print(f"Error syncing commands: {e}")
+
 @bot.event
 async def on_ready():
-    # Optional: Clear and re-sync global slash commands
     try:
-        await tree.sync()
-        print(f"Logged in as {bot.user} and slash commands synced!")
+        # Clear all old global commands (optional but useful during development)
+        guilds = await bot.fetch_guilds().flatten()
+        for guild in guilds:
+            await tree.sync(guild=guild)
+        await tree.sync()  # Sync global commands too
+        print(f"Logged in as {bot.user} and commands synced!")
     except Exception as e:
         print(f"Error syncing commands: {e}")
+
 
 # ----- Prefix Commands -----
 
