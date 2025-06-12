@@ -13,3 +13,8 @@ A 1 Enoch bot for Discord
 ## Bibliography
 
 Charlesworth, James H., ed. The Old Testament Pseudepigrapha Volume 1: Apocalyptic Literature and Testaments. Garden City, New York: Doubleday & Company, Inc, 1983.
+
+Nickelsburg, George W. E., and James C. VanderKam, eds. 1 Enoch: The Hermeneia Translation. Minneapolis: Fortress Press, 2012.
+
+
+
