@@ -164,10 +164,29 @@ async def slash_help(interaction: discord.Interaction):
 # ----- /enoch  ----- 
 
 @tree.command(name="enoch", description="Get a passage from 1 Enoch.")
-@app_commands.describe(reference="Format: 48:1 or 48:1-10")
-async def slash_enoch(interaction: discord.Interaction, reference: str):
+@app_commands.describe(
+    reference="Format: 48:1 or 48:1-10",
+    translation="Choose a translation version"
+)
+@app_commands.choices(
+    translation=[
+        app_commands.Choice(name="Charlesworth (1983)", value="charlesworth"),
+        app_commands.Choice(name="Hermeneia (2012)", value="hermeneia")
+    ]
+)
+async def slash_enoch(
+    interaction: discord.Interaction,
+    reference: str,
+    translation: app_commands.Choice[str]
+):
     try:
         reference = reference.replace(" ", "")
+        version = translation.value
+        text_data = enoch_data["translations"].get(version)
+
+        if not text_data:
+            await interaction.response.send_message("❌ Translation not found.", ephemeral=True)
+            return
 
         if '-' in reference:
             chapter_verse, end_verse = reference.split('-')
@@ -200,12 +219,12 @@ async def slash_enoch(interaction: discord.Interaction, reference: str):
             verses_text = ""
             for v in range(start, end + 1):
                 key = f"{chapter}:{v}"
-                verse_text = enoch_data["enoch"].get(key)
+                verse_text = text_data.get(key)
                 if verse_text:
                     verses_text += f"**{v}.** {verse_text}\n"
 
             embed = discord.Embed(
-                title=f"1 Enoch {chapter}:{start}-{end}",
+                title=f"1 Enoch {chapter}:{start}-{end} ({translation.name})",
                 description=verses_text.strip(),
                 color=discord.Color.gold()
             )
@@ -231,10 +250,10 @@ async def slash_enoch(interaction: discord.Interaction, reference: str):
                 return
 
             key = f"{chapter}:{verse}"
-            verse_text = enoch_data["enoch"].get(key)
+            verse_text = text_data.get(key)
 
             embed = discord.Embed(
-                title=f"1 Enoch {key}",
+                title=f"1 Enoch {key} ({translation.name})",
                 description=f"**{verse}.** {verse_text}",
                 color=discord.Color.gold()
             )
@@ -242,6 +261,7 @@ async def slash_enoch(interaction: discord.Interaction, reference: str):
 
     except Exception as e:
         await interaction.response.send_message(f"⚠️ Error: {e}", ephemeral=True)
+
 
 
 
