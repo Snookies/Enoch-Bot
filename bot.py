@@ -15,7 +15,7 @@ with open("enoch_texts.json", "r", encoding="utf-8") as f:
     enoch_data = json.load(f)
 
 # Build a lookup of available verses
-available_refs = enoch_data["enoch"].keys()
+available_refs = enoch_data["translations"]["charlesworth"].keys()
 
 # Build max chapter and verse per chapter
 chapter_verse_map = {}
@@ -47,100 +47,6 @@ async def on_ready():
         print(f"Error syncing commands: {e}")
 
 
-# ----- Prefix Commands -----
-
-@bot.command()
-async def ping(ctx):
-    await ctx.send("Pong!")
-
-@bot.command(name="commands")
-async def custom_help(ctx):
-    help_message = (
-        "**Available Commands:** \n"
-        "`!commands` - Show list of commands\n"
-        "`/ping` - Test bot responsiveness\n"
-        "`!enoch <chapter:verse>` or `<chapter:verse-verse>` - Get passage from 1 Enoch\n"
-    )
-    await ctx.send(help_message)
-
-@bot.command()
-async def enoch(ctx, reference: str):
-    try:
-        reference = reference.replace(" ", "")
-        embed = None
-
-        if '-' in reference:
-            chapter_verse, end_verse = reference.split('-')
-            chapter, start_verse = chapter_verse.split(':')
-
-            if not chapter.isdigit() or not start_verse.isdigit() or not end_verse.isdigit():
-                await ctx.send("❌ Invalid format. Use chapter:verse or chapter:verse-verse.")
-                return
-
-            chapter_num = int(chapter)
-            start = int(start_verse)
-            end = int(end_verse)
-
-            if start > end:
-                await ctx.send("❌ Invalid range: start verse must be less than or equal to end.")
-                return
-
-            if chapter_num not in chapter_verse_map:
-                await ctx.send("❌ Chapter not found.")
-                return
-
-            missing = [v for v in range(start, end + 1) if v not in chapter_verse_map[chapter_num]]
-            if missing:
-                await ctx.send(f"❌ These verses don't exist in chapter {chapter}: {', '.join(map(str, missing))}")
-                return
-
-            verses_text = ""
-            for v in range(start, end + 1):
-                key = f"{chapter}:{v}"
-                verse_text = enoch_data["enoch"].get(key)
-                if verse_text:
-                    verses_text += f"**{v}.** {verse_text}\n"
-
-            embed = discord.Embed(
-                title=f"1 Enoch {chapter}:{start}-{end}",
-                description=verses_text.strip(),
-                color=discord.Color.gold()
-            )
-
-        else:
-            chapter, verse = reference.split(':')
-
-            if not chapter.isdigit() or not verse.isdigit():
-                await ctx.send("❌ Invalid format. Use chapter:verse.")
-                return
-
-            chapter_num = int(chapter)
-            verse_num = int(verse)
-
-            if chapter_num not in chapter_verse_map or verse_num not in chapter_verse_map[chapter_num]:
-                await ctx.send("❌ That verse does not exist.")
-                return
-
-            key = f"{chapter}:{verse}"
-            verse_text = enoch_data["enoch"].get(key)
-
-            embed = discord.Embed(
-                title=f"1 Enoch {key}",
-                description=f"**{verse}.** {verse_text}",
-                color=discord.Color.gold()
-            )
-
-        if embed and len(embed.description) <= 4096:
-            await ctx.send(embed=embed)
-        else:
-            await ctx.send("⚠️ Passage too long to display in a single embed.")
-
-    except Exception as e:
-        await ctx.send("⚠️ An error occurred.")
-
-
-
-
 # ----- Global Slash Commands -----
 
 # ----- /ping -----
@@ -157,7 +63,8 @@ async def slash_help(interaction: discord.Interaction):
         "**Available Slash Commands:**\n"
         "`/commands` - Show list of commands\n"
         "`/ping` - Test bot responsiveness\n"
-        "`/enoch <reference>` - Get passage from 1 Enoch\n"
+        "`/enoch reference:<chapter:verse[-verse]> translation:<version>` - Get passage from 1 Enoch\n"
+
     )
     await interaction.response.send_message(help_message)
 
@@ -182,6 +89,17 @@ async def slash_enoch(
     try:
         reference = reference.replace(" ", "")
         version = translation.value
+
+        available_refs = enoch_data["translations"][version].keys()
+
+        # Build dynamic verse map based on selected version
+        chapter_verse_map = {}
+        for ref in available_refs:
+            ch, vs = ref.split(":")
+            ch = int(ch)
+            vs = int(vs)
+            chapter_verse_map.setdefault(ch, set()).add(vs)
+
         text_data = enoch_data["translations"].get(version)
 
         if not text_data:
@@ -216,12 +134,14 @@ async def slash_enoch(
                 )
                 return
 
-            verses_text = ""
             for v in range(start, end + 1):
                 key = f"{chapter}:{v}"
                 verse_text = text_data.get(key)
                 if verse_text:
                     verses_text += f"**{v}.** {verse_text}\n"
+                else:
+                    verses_text += f"**{v}.** [Not found]\n"
+
 
             embed = discord.Embed(
                 title=f"1 Enoch {chapter}:{start}-{end} ({translation.name})",
