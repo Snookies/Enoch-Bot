@@ -6,9 +6,9 @@ A 1 Enoch bot for Discord
 
 ## Commands
 
-* `/commands` | `!commands` - Show list of commands
-* `/enoch` | `!enoch <chapter:verse>` or `<chapter:verse-verse>` - Get passage from 1 Enoch
-* `/ping` | `!ping` - Pong
+* `/commands` - Show list of commands
+* `/enoch` - Get passage from 1 Enoch"
+* `/ping` - Pong
 
 ## Bibliography
 
