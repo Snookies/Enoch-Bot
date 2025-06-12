@@ -145,10 +145,12 @@ async def slash_enoch(
 
 
             embed = discord.Embed(
-                title=f"1 Enoch {chapter}:{start}-{end} ({translation.name})",
+                title=f"1 Enoch {chapter}:{start}-{end}",
                 description=verses_text.strip(),
                 color=discord.Color.gold()
             )
+            embed.set_footer(text=translation.name)
+
 
             if len(embed.description) > 4096:
                 await interaction.response.send_message("⚠️ Passage too long to display in a single embed.", ephemeral=True)
@@ -174,10 +176,11 @@ async def slash_enoch(
             verse_text = text_data.get(key)
 
             embed = discord.Embed(
-                title=f"1 Enoch {key} ({translation.name})",
+                title=f"1 Enoch {key}",
                 description=f"**{verse}.** {verse_text}",
                 color=discord.Color.gold()
             )
+            embed.set_footer(text=translation.name)
             await interaction.response.send_message(embed=embed)
 
     except Exception as e:
