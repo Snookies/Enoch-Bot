@@ -134,6 +134,7 @@ async def slash_enoch(
                 )
                 return
 
+            verses_text = ""
             for v in range(start, end + 1):
                 key = f"{chapter}:{v}"
                 verse_text = text_data.get(key)
