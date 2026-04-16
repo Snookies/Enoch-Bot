@@ -14,19 +14,20 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 with open("enoch_texts.json", "r", encoding="utf-8") as f:
     enoch_data = json.load(f)
 
-# Build a lookup of available verses
-available_refs = enoch_data["translations"]["charlesworth"].keys()
+# Build a per-translation lookup of available verses
+def build_verse_map(translation_key):
+    verse_map = {}
+    for ref in enoch_data["translations"][translation_key].keys():
+        ch, vs = ref.split(":")
+        ch = int(ch)
+        vs = int(vs)
+        verse_map.setdefault(ch, set()).add(vs)
+    return verse_map
 
-# Build max chapter and verse per chapter
-chapter_verse_map = {}
-for ref in available_refs:
-    ch, vs = ref.split(":")
-    ch = int(ch)
-    vs = int(vs)
-
-    if ch not in chapter_verse_map:
-        chapter_verse_map[ch] = set()
-    chapter_verse_map[ch].add(vs)
+translation_verse_maps = {
+    key: build_verse_map(key)
+    for key in enoch_data["translations"]
+}
 
 # Intents
 intents = discord.Intents.default()
@@ -90,21 +91,12 @@ async def slash_enoch(
         reference = reference.replace(" ", "")
         version = translation.value
 
-        available_refs = enoch_data["translations"][version].keys()
-
-        # Build dynamic verse map based on selected version
-        chapter_verse_map = {}
-        for ref in available_refs:
-            ch, vs = ref.split(":")
-            ch = int(ch)
-            vs = int(vs)
-            chapter_verse_map.setdefault(ch, set()).add(vs)
-
         text_data = enoch_data["translations"].get(version)
-
         if not text_data:
             await interaction.response.send_message("❌ Translation not found.", ephemeral=True)
             return
+
+        chapter_verse_map = translation_verse_maps[version]
 
         if '-' in reference:
             chapter_verse, end_verse = reference.split('-')
@@ -126,10 +118,11 @@ async def slash_enoch(
                 await interaction.response.send_message("❌ Chapter not found.", ephemeral=True)
                 return
 
-            missing = [v for v in range(start, end + 1) if v not in chapter_verse_map[chapter_num]]
-            if missing:
+            # Check that at least one verse in the range exists
+            available_in_range = [v for v in range(start, end + 1) if v in chapter_verse_map[chapter_num]]
+            if not available_in_range:
                 await interaction.response.send_message(
-                    f"❌ These verses don't exist in chapter {chapter}: {', '.join(map(str, missing))}",
+                    f"❌ No verses found in {chapter}:{start}-{end} for this translation.",
                     ephemeral=True
                 )
                 return
@@ -140,9 +133,7 @@ async def slash_enoch(
                 verse_text = text_data.get(key)
                 if verse_text:
                     verses_text += f"**{v}.** {verse_text}\n"
-                else:
-                    verses_text += f"**{v}.** [Not found]\n"
-
+                # Silently skip merged/absent verses rather than showing [Not found]
 
             embed = discord.Embed(
                 title=f"1 Enoch {chapter}:{start}-{end}",
@@ -150,7 +141,6 @@ async def slash_enoch(
                 color=discord.Color.gold()
             )
             embed.set_footer(text=translation.name)
-
 
             if len(embed.description) > 4096:
                 await interaction.response.send_message("⚠️ Passage too long to display in a single embed.", ephemeral=True)
